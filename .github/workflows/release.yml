@@ -72,7 +72,10 @@ jobs:
           BUILDROOT: ./pkgroot
           LD_LIBRARY_PATH: ./oqs-test/tmp/lib:./oqs-test/tmp/lib64:./oqs/lib:./oqs/lib64
         run: |
-          VERSION=$(oqs-test/tmp/bin/ssh -V 2>&1 | awk '{print $1"_"$2}' | tr -d ,)
+          VERSION=$("$PWD"/oqs-test/tmp/bin/ssh -V 2>&1 \
+            | sed 's/,//g' \
+            | awk '{print $1"_"$2}' \
+            | sed -E 's/-/./g; s/[^A-Za-z0-9._+~]/_/g')
           # stage to /opt/oqs-openssh-<ver>
           DEST="$BUILDROOT$PREFIX_BASE-$VERSION"
           mkdir -p "$DEST"
