@@ -9,32 +9,60 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        fedora: [41, 42]  # choose the Fedora majors you support
+        fedora: [41, 42] # choose the Fedora majors you support
     container:
       image: fedora:${{ matrix.fedora }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Build OQS-OpenSSH and stage pkgroot
-        id: build
+      - name: clone open-quantum-safe/openssh
+        uses: actions/checkout@v4
+        with:
+          repository: open-quantum-safe/openssh
+          path: openssh
+          ref: OQS-v10
+      - name: clone open-quantum-safe/liboqs
+        uses: actions/checkout@v4
+        with:
+          repository: open-quantum-safe/liboqs
+          path: openssh/oqs-scripts/tmp/liboqs
+          ref: main
+      - name: build open-quantum-safe/liboqs
+        working-directory: openssh
+        run: oqs-scripts/build_liboqs.sh
+      - name: build open-quantum-safe/openssh
+        working-directory: openssh
         env:
           FEDORA_MAJOR: ${{ matrix.fedora }}
+          OPENSSL_SYS_DIR: /usr
+          PREFIX_BASE: /opt/oqs-openssh
+          BUILDROOT: ./pkgroot
+        run: oqs-scripts/build_openssh.sh
+      - name: stage open-quantum-safe/openssh
+        id: stage
+        working-directory: openssh
+        env:
+          FEDORA_MAJOR: ${{ matrix.fedora }}
+          OPENSSL_SYS_DIR: /usr
+          PREFIX_BASE: /opt/oqs-openssh
+          BUILDROOT: ./pkgroot
         run: |
-          bash ./build.sh
-          VERSION=$(./openssh/oqs-test/tmp/bin/ssh -V 2>&1 | awk '{print $1"_"$2}' | tr -d ,)
+          VERSION=$(oqs-test/tmp/bin/ssh -V 2>&1 | awk '{print $1"_"$2}' | tr -d ,)
+          # stage to /opt/oqs-openssh-<ver>
+          DEST="$BUILDROOT$PREFIX_BASE-$VERSION"
+          mkdir -p "$DEST"
+          cp -a oqs-test/tmp/* "$DEST"/
+          ln -sfn "oqs-openssh-$VERSION" "$BUILDROOT$PREFIX_BASE"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build RPM
+      - name: build package
         run: |
           mkdir -p $HOME/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           tar -C . -czf $HOME/rpmbuild/SOURCES/openssh-oqs-src.tar.gz pkgroot
-          # Pass version into spec via --define
+          # pass version into spec via --define
           rpmbuild -bb SPECS/openssh-oqs.spec \
-            --define "version ${{ steps.build.outputs.VERSION }}" \
+            --define "version ${{ steps.stage.outputs.VERSION }}" \
             --define "_sourcedir $GITHUB_WORKSPACE"
           ls -al $HOME/rpmbuild/RPMS/x86_64
-
-      - name: Upload RPM artifact
+      - name: upload rpm artifact
         uses: actions/upload-artifact@v4
         with:
           name: rpm-fedora-${{ matrix.fedora }}
@@ -47,11 +75,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
-      - name: Create checksums
+      - name: create checksums
         run: |
           cd dist
           find . -name "*.rpm" -type f -exec sha256sum {} \; > SHA256SUMS.txt
-      - name: Create GitHub Release
+      - name: create gitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: |
