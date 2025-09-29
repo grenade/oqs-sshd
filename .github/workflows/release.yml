@@ -47,7 +47,9 @@ jobs:
         run: oqs-scripts/build_liboqs.sh
       - name: stage open-quantum-safe/liboqs
         working-directory: openssh
-        run: ln -s oqs/lib64 oqs/lib
+        run: |
+          echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
+          ln -s oqs/lib64 oqs/lib
       - name: build open-quantum-safe/openssh
         working-directory: openssh
         env:
@@ -55,6 +57,7 @@ jobs:
           OPENSSL_SYS_DIR: /usr
           PREFIX_BASE: /opt/oqs-openssh
           BUILDROOT: ./pkgroot
+          LD_LIBRARY_PATH: ./oqs/lib64:./oqs/lib
         run: oqs-scripts/build_openssh.sh
       - name: stage open-quantum-safe/openssh
         id: stage
