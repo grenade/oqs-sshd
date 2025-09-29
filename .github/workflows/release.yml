@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -p -m 0755 /var/empty
           groupadd sshd
-          useradd --gid sshd --gid 'sshd privsep' --home-dir /var/empty --no-create-home --shell /bin/false sshd
+          useradd --gid sshd --comment 'sshd privsep' --home-dir /var/empty --no-create-home --shell /bin/false sshd
       - name: build open-quantum-safe/liboqs
         working-directory: openssh
         run: oqs-scripts/build_liboqs.sh
