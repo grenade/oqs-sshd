@@ -53,6 +53,10 @@ jobs:
       - name: stage open-quantum-safe/liboqs
         working-directory: openssh
         run: ln -s oqs/lib64 oqs/lib
+      - name: relocatable rpath
+        working-directory: openssh
+        run: |
+          sed -i -E 's|--with-ldflags="[^"]*"|--with-ldflags="-Wl,-rpath,\$$ORIGIN/../lib:\$$ORIGIN/../lib64"|g' oqs-scripts/build_openssh.sh
       - name: build open-quantum-safe/openssh
         working-directory: openssh
         env:
