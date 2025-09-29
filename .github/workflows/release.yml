@@ -39,6 +39,7 @@ jobs:
           make
           ninja-build
           openssl-devel
+          patchelf
           pkgconfig
           rpm-build
           zlib-devel
@@ -53,10 +54,6 @@ jobs:
       - name: stage open-quantum-safe/liboqs
         working-directory: openssh
         run: ln -s oqs/lib64 oqs/lib
-      - name: relocatable rpath
-        working-directory: openssh
-        run: |
-          sed -i -E 's|(--with-ldflags=)"[^"]*"|\1"-Wl,-rpath,\\$ORIGIN/../lib:\\$ORIGIN/../lib64"|g' oqs-scripts/build_openssh.sh
       - name: build open-quantum-safe/openssh
         working-directory: openssh
         env:
@@ -85,6 +82,10 @@ jobs:
           mkdir -p "$DEST"
           cp -a oqs-test/tmp/* "$DEST"/
           ln -sfn "oqs-openssh-$VERSION" "$BUILDROOT$PREFIX_BASE"
+          mapfile -t elfs < <(find "$DEST" -type f -print0 | xargs -0 file | grep -E 'ELF .* (executable|shared object)' | cut -d: -f1)
+          for f in "${elfs[@]}"; do
+            patchelf --force-rpath --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib64' "$f"
+          done
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       - name: build package
         working-directory: openssh
