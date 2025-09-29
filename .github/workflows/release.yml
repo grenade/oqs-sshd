@@ -42,11 +42,11 @@ jobs:
           pkgconfig
           rpm-build
           zlib-devel
-      - name: create privilege separations
+      - name: create sshd privilege separation user
         run: |
           mkdir -p -m 0755 /var/empty
           groupadd sshd
-          useradd -g sshd -c 'sshd privsep' -d /var/empty -s /bin/false sshd
+          useradd --gid sshd --gid 'sshd privsep' --home-dir /var/empty --no-create-home --shell /bin/false sshd
       - name: build open-quantum-safe/liboqs
         working-directory: openssh
         run: oqs-scripts/build_liboqs.sh
@@ -84,9 +84,9 @@ jobs:
           mkdir -p $HOME/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           tar -C . -czf $HOME/rpmbuild/SOURCES/openssh-oqs-src.tar.gz pkgroot
           # pass version into spec via --define
-          rpmbuild -bb SPECS/openssh-oqs.spec \
+          rpmbuild -bb ../SPECS/openssh-oqs.spec \
             --define "version ${{ steps.stage.outputs.VERSION }}" \
-            --define "_sourcedir $GITHUB_WORKSPACE"
+            --define "_sourcedir $GITHUB_WORKSPACE/openssh"
           ls -al $HOME/rpmbuild/RPMS/x86_64
       - name: upload rpm artifact
         uses: actions/upload-artifact@v4
