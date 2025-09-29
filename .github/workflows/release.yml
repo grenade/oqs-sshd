@@ -1,0 +1,61 @@
+name: build-and-release-rpm
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        fedora: [41, 42]  # choose the Fedora majors you support
+    container:
+      image: fedora:${{ matrix.fedora }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build OQS-OpenSSH and stage pkgroot
+        id: build
+        env:
+          FEDORA_MAJOR: ${{ matrix.fedora }}
+        run: |
+          bash ./build.sh
+          VERSION=$(./openssh/oqs-test/tmp/bin/ssh -V 2>&1 | awk '{print $1"_"$2}' | tr -d ,)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build RPM
+        run: |
+          mkdir -p $HOME/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          tar -C . -czf $HOME/rpmbuild/SOURCES/openssh-oqs-src.tar.gz pkgroot
+          # Pass version into spec via --define
+          rpmbuild -bb SPECS/openssh-oqs.spec \
+            --define "version ${{ steps.build.outputs.VERSION }}" \
+            --define "_sourcedir $GITHUB_WORKSPACE"
+          ls -al $HOME/rpmbuild/RPMS/x86_64
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rpm-fedora-${{ matrix.fedora }}
+          path: $HOME/rpmbuild/RPMS/x86_64/*.rpm
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Create checksums
+        run: |
+          cd dist
+          find . -name "*.rpm" -type f -exec sha256sum {} \; > SHA256SUMS.txt
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/**/**/*.rpm
+            dist/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
