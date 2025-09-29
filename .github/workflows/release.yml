@@ -26,6 +26,22 @@ jobs:
           repository: open-quantum-safe/liboqs
           path: openssh/oqs-scripts/tmp/liboqs
           ref: main
+      - name: install toolchain
+        run: >
+          dnf install -y
+          autoconf
+          automake
+          cmake
+          gcc
+          libfido2-devel
+          liboqs-devel
+          libtool
+          make
+          ninja-build
+          openssl-devel
+          pkgconfig
+          rpm-build
+          zlib-devel
       - name: build open-quantum-safe/liboqs
         working-directory: openssh
         run: oqs-scripts/build_liboqs.sh
