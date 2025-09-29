@@ -42,14 +42,17 @@ jobs:
           pkgconfig
           rpm-build
           zlib-devel
+      - name: create privilege separations
+        run: |
+          mkdir -p -m 0755 /var/empty
+          groupadd sshd
+          useradd -g sshd -c 'sshd privsep' -d /var/empty -s /bin/false sshd
       - name: build open-quantum-safe/liboqs
         working-directory: openssh
         run: oqs-scripts/build_liboqs.sh
       - name: stage open-quantum-safe/liboqs
         working-directory: openssh
-        run: |
-          echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH}"
-          ln -s oqs/lib64 oqs/lib
+        run: ln -s oqs/lib64 oqs/lib
       - name: build open-quantum-safe/openssh
         working-directory: openssh
         env:
@@ -76,6 +79,7 @@ jobs:
           ln -sfn "oqs-openssh-$VERSION" "$BUILDROOT$PREFIX_BASE"
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       - name: build package
+        working-directory: openssh
         run: |
           mkdir -p $HOME/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
           tar -C . -czf $HOME/rpmbuild/SOURCES/openssh-oqs-src.tar.gz pkgroot
