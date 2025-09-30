@@ -71,7 +71,7 @@ jobs:
           OPENSSL_SYS_DIR: /usr
           PREFIX_BASE: /opt/oqs-openssh
           BUILDROOT: ./pkgroot
-          LD_LIBRARY_PATH: ./oqs-test/tmp/lib:./oqs-test/tmp/lib64:./oqs/lib:./oqs/lib64
+          LD_LIBRARY_PATH: oqs-test/tmp/lib:oqs-test/tmp/lib64:oqs/lib:oqs/lib64
         run: |
           VERSION=$(oqs-test/tmp/bin/ssh -V 2>&1 \
             | cut -d , -f 1 \
