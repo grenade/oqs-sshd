@@ -51,6 +51,9 @@ jobs:
       - name: build open-quantum-safe/liboqs
         working-directory: openssh
         run: oqs-scripts/build_liboqs.sh
+      - name: stage open-quantum-safe/liboqs
+        working-directory: openssh
+        run: ln -s oqs/lib64 oqs/lib
       - name: build open-quantum-safe/openssh
         working-directory: openssh
         env:
