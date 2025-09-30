@@ -88,20 +88,18 @@ jobs:
           done
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
       - name: build package
-        working-directory: openssh
         run: |
-          mkdir -p $HOME/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
-          tar -C . -czf $HOME/rpmbuild/SOURCES/openssh-oqs-src.tar.gz pkgroot
-          # pass version into spec via --define
-          rpmbuild -bb ../SPECS/openssh-oqs.spec \
+          mkdir -p $GITHUB_WORKSPACE/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
+          rpmbuild -bb SPECS/openssh-oqs.spec \
             --define "version ${{ steps.stage.outputs.VERSION }}" \
+            --define "_topdir $GITHUB_WORKSPACE/rpmbuild" \
             --define "_sourcedir $GITHUB_WORKSPACE/openssh"
-          ls -al $HOME/rpmbuild/RPMS/x86_64
+          ls -al $GITHUB_WORKSPACE/rpmbuild/RPMS/x86_64
       - name: upload rpm artifact
         uses: actions/upload-artifact@v4
         with:
           name: rpm-fedora-${{ matrix.fedora }}
-          path: ${{ env.HOME }}/rpmbuild/RPMS/x86_64/*.rpm
+          path: rpmbuild/RPMS/x86_64/*.rpm
           if-no-files-found: error
 
   release:
