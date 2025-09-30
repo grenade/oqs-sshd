@@ -1,4 +1,4 @@
-Name:           openssh-oqs
+Name:           oqs-openssh
 Version:        %{?version}%{!?version:0}
 Release:        1%{?dist}
 Summary:        OQS-enabled OpenSSH under /opt with PQ-only policy
@@ -67,7 +67,7 @@ ALG="$(/opt/oqs-openssh/bin/ssh -Q key | egrep -m1 'ssh-oqs-(ml-dsa-44|dilithium
 if [ -n "$ALG" ]; then
   sed -i "s|__OQS_SIG_ALGO__|$ALG|g" /etc/ssh/sshd_config.d/50-pq-only.conf
 else
-  logger -t openssh-oqs "Could not detect OQS signature algo; not enforcing PQ sigs."
+  logger -t oqs-openssh "Could not detect OQS signature algo; not enforcing PQ sigs."
   sed -i "s|__OQS_SIG_ALGO__|ssh-ed25519|g" /etc/ssh/sshd_config.d/50-pq-only.conf
 fi
 
@@ -80,7 +80,7 @@ if /opt/oqs-openssh/sbin/sshd -t -f /etc/ssh/sshd_config; then
   systemctl daemon-reload
   systemctl restart sshd || true
 else
-  logger -t openssh-oqs "sshd config test failed; not restarting."
+  logger -t oqs-openssh "sshd config test failed; not restarting."
 fi
 
 %postun
