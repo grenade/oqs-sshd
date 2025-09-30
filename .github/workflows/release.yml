@@ -105,6 +105,8 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -113,7 +115,7 @@ jobs:
         run: |
           cd dist
           find . -name "*.rpm" -type f -exec sha256sum {} \; > SHA256SUMS.txt
-      - name: create gitHub release
+      - name: create github release
         uses: softprops/action-gh-release@v2
         with:
           files: |
